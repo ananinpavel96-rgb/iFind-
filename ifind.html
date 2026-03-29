@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iFind — Найди iPhone</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #ffffff0f;
+    --accent: #6ee7ff;
+    --accent2: #a78bfa;
+    --warn: #fb923c;
+    --danger: #f87171;
+    --ok: #4ade80;
+    --text: #f0f0ff;
+    --muted: #6b7280;
+    --font: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, #6ee7ff0a 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, #a78bfa08 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 32px 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .tagline {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-left: auto;
+  }
+
+  /* Search area */
+  .search-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .search-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text);
+    font-family: var(--font);
+  }
+
+  .chip:hover, .chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #6ee7ff10;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--accent);
+  }
+
+  .search-input::placeholder { color: var(--muted); }
+
+  .search-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 14px;
+    color: #000;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .search-btn:hover { opacity: 0.9; }
+  .search-btn:active { transform: scale(0.98); }
+  .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Budget slider */
+  .budget-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .budget-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  .budget-val {
+    font-size: 13px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+  }
+
+  /* Chat messages */
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 40px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .avatar.bot {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    font-weight: 700;
+  }
+
+  .avatar.user-av {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .bubble {
+    max-width: 85%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .msg.user .bubble {
+    background: #6ee7ff12;
+    border-color: #6ee7ff25;
+  }
+
+  /* Result cards */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 8px;
+    transition: border-color 0.2s;
+  }
+
+  .result-card:hover { border-color: #ffffff25; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .result-title {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .result-price {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-left: 12px;
+  }
+
+  .result-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .tag.ok { border-color: #4ade8040; color: var(--ok); }
+  .tag.warn { border-color: #fb923c40; color: var(--warn); }
+  .tag.danger { border-color: #f8717140; color: var(--danger); }
+
+  .result-source {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    font-family: var(--mono);
+  }
+
+  .risk-bar {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  .risk-bar.safe { background: #4ade8008; border: 1px solid #4ade8030; color: var(--ok); }
+  .risk-bar.caution { background: #fb923c08; border: 1px solid #fb923c30; color: var(--warn); }
+  .risk-bar.risky { background: #f8717108; border: 1px solid #f8717130; color: var(--danger); }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* Summary box */
+  .summary-box {
+    background: linear-gradient(135deg, #6ee7ff08, #a78bfa08);
+    border: 1px solid #6ee7ff20;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .summary-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 20px 0 8px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-dot"></div>
+    <div class="logo">iFind</div>
+    <div class="tagline">поиск iPhone / Екб</div>
+  </header>
+
+  <div class="search-section">
+    <div class="search-label">// быстрый выбор модели</div>
+    <div class="quick-chips">
+      <div class="chip" onclick="selectModel(this, 'iPhone 12')">iPhone 12</div>
+      <div class="chip" onclick="selectModel(this, 'iPhone 13')">iPhone 13</div>
+      <div class="chip" onclick="selectModel(this, 'iPhone 14')">iPhone 14</div>
+      <div class="chip" onclick="selectModel(this, 'iPhone 15')">iPhone 15</div>
+      <div class="chip" onclick="selectModel(this, 'MacBook')">MacBook</div>
+      <div class="chip" onclick="selectModel(this, 'iPad')">iPad</div>
+    </div>
+
+    <div class="input-row">
+      <input class="search-input" id="userInput" type="text"
+        placeholder="Напр: iPhone 13 до 40000 в хорошем состоянии..."
+        onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="search-btn" id="sendBtn" onclick="sendMessage()">Найти →</button>
+    </div>
+
+    <div class="budget-row">
+      <span class="budget-label">бюджет:</span>
+      <input type="range" id="budgetSlider" min="10000" max="120000" step="5000" value="40000"
+        oninput="updateBudget(this.value)">
+      <span class="budget-val" id="budgetVal">40 000 ₽</span>
+    </div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="footer">
+    iFind by Apple барахолка Екб · <a href="#">ВКонтакте</a>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `Ты — iFind, умный помощник по поиску iPhone и Apple техники в России (фокус на Екатеринбург).
+
+ТВОЯ ЗАДАЧА: помочь пользователю найти лучшую сделку на б/у iPhone, iPad, MacBook.
+
+ФОРМАТ ОТВЕТА — строго JSON:
+{
+  "intro": "короткое вступление 1-2 предложения",
+  "results": [
+    {
+      "title": "название объявления",
+      "price": "цена цифрами в рублях",
+      "source": "площадка (Авито / Юла / ВК / OZON)",
+      "condition": "отличное / хорошее / среднее",
+      "risk": "safe / caution / risky",
+      "risk_reason": "причина риска если есть",
+      "tags": ["128gb", "Face ID", "комплект"],
+      "link_hint": "поисковый запрос для поиска этого объявления"
+    }
+  ],
+  "advice": "итоговый совет — что брать, на что смотреть",
+  "avg_price": "средняя цена по рынку цифрой",
+  "best_pick": 0
+}
+
+ПРАВИЛА:
+- Генерируй 3-4 реалистичных варианта с актуальными ценами 2024-2025
+- Цены должны быть реальными для б/у рынка РФ
+- risk: safe = цена в рынке, состояние хорошее; caution = есть нюансы; risky = слишком дёшево или подозрительно
+- Давай конкретные советы про IMEI, встречу, проверку
+- Отвечай ТОЛЬКО валидным JSON, без markdown, без лишнего текста`;
+
+let selectedModel = '';
+let budget = 40000;
+let isLoading = false;
+
+function updateBudget(val) {
+  budget = parseInt(val);
+  document.getElementById('budgetVal').textContent = parseInt(val).toLocaleString('ru') + ' ₽';
+}
+
+function selectModel(el, model) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedModel = model;
+  document.getElementById('userInput').placeholder = `Что важно в ${model}? Память, цвет, состояние...`;
+}
+
+function addMessage(role, content) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : '');
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar ' + (role === 'user' ? 'user-av' : 'bot');
+  avatar.textContent = role === 'user' ? '👤' : 'i';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (role === 'user') {
+    bubble.textContent = content;
+  } else {
+    bubble.innerHTML = content;
+  }
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return bubble;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.id = 'typing-indicator';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar bot';
+  avatar.textContent = 'i';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function renderResults(data) {
+  let html = '';
+
+  if (data.intro) {
+    html += `<div style="margin-bottom:12px;color:#c4c4d4;font-size:14px">${data.intro}</div>`;
+  }
+
+  if (data.results && data.results.length) {
+    data.results.forEach((r, i) => {
+      const isBest = i === (data.best_pick || 0);
+      html += `
+        <div class="result-card" style="${isBest ? 'border-color:#6ee7ff40' : ''}">
+          ${isBest ? '<div style="font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:6px">★ лучший выбор</div>' : ''}
+          <div class="result-header">
+            <div class="result-title">${r.title}</div>
+            <div class="result-price">${parseInt(r.price).toLocaleString('ru')} ₽</div>
+          </div>
+          <div class="result-meta">
+            <span class="tag">${r.source}</span>
+            <span class="tag ${r.condition === 'отличное' ? 'ok' : r.condition === 'среднее' ? 'warn' : ''}">${r.condition}</span>
+            ${(r.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
+          </div>
+          ${r.risk !== 'safe' ? `<div class="risk-bar ${r.risk}">⚠ ${r.risk_reason || 'проверьте объявление'}</div>` : `<div class="risk-bar safe">✓ цена в рынке, выглядит нормально</div>`}
+          ${r.link_hint ? `<div class="result-source">→ поиск: "${r.link_hint}"</div>` : ''}
+        </div>`;
+    });
+  }
+
+  if (data.avg_price || data.advice) {
+    html += `<div class="summary-box">
+      <div class="summary-title">// итог</div>
+      ${data.avg_price ? `<div style="margin-bottom:6px">Средняя цена по рынку: <span style="color:var(--accent);font-family:var(--mono)">${parseInt(data.avg_price).toLocaleString('ru')} ₽</span></div>` : ''}
+      ${data.advice || ''}
+    </div>`;
+  }
+
+  return html;
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+
+  if (!text && !selectedModel) {
+    input.placeholder = 'Введи запрос или выбери модель выше';
+    return;
+  }
+
+  const query = text || `Ищу ${selectedModel} до ${budget.toLocaleString('ru')} рублей`;
+  const fullQuery = `${query}. Бюджет: ${budget.toLocaleString('ru')} рублей. Город: Екатеринбург.${selectedModel ? ' Модель: ' + selectedModel + '.' : ''}`;
+
+  addMessage('user', query);
+  input.value = '';
+
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: fullQuery }]
+      })
+    });
+
+    const data = await response.json();
+    removeTyping();
+
+    const rawText = data.content.map(b => b.text || '').join('');
+
+    let parsed;
+    try {
+      const clean = rawText.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+      addMessage('bot', renderResults(parsed));
+    } catch {
+      addMessage('bot', `<div style="font-size:14px;line-height:1.6">${rawText}</div>`);
+    }
+
+  } catch (err) {
+    removeTyping();
+    addMessage('bot', '⚠ Ошибка соединения. Попробуй ещё раз.');
+    console.error(err);
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+// Welcome message
+window.onload = () => {
+  addMessage('bot', `
+    <div style="font-size:14px;line-height:1.7">
+      Привет! Я помогу найти iPhone по всему рунету — Авито, Юла, ВК и другие площадки.<br><br>
+      <span style="color:var(--muted)">Выбери модель выше или напиши что ищешь 👆</span>
+    </div>
+  `);
+};
+</script>
+</body>
+</html>
